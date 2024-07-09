@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type MovieItem struct {
+type Movie struct {
 	Id      int       `json:"id"`
 	Created time.Time `json:"created"`
 	Title   string    `json:"title"`

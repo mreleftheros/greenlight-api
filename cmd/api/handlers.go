@@ -25,7 +25,7 @@ func (app *application) healthGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Get movies")
+	errRes(w, "oh no", nil)
 }
 
 func (app *application) moviesPost(w http.ResponseWriter, r *http.Request) {
@@ -39,11 +39,11 @@ func (app *application) moviesIdParamGet(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	movie := models.MovieItem{
+	movie := models.Movie{
 		Id:      id,
 		Created: time.Now(),
 		Title:   "Casablanca",
-		Year:    2020,
+		Year:    0,
 		Runtime: 122,
 		Genres:  []string{"Comedy", "Drama", "Crime"},
 	}

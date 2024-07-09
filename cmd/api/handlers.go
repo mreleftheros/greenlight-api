@@ -16,12 +16,7 @@ func (app *application) healthGet(w http.ResponseWriter, r *http.Request) {
 		"version":     VERSION,
 	}
 
-	err := jsonRes(w, data, nil)
-	if err != nil {
-		app.errLog.Println(err)
-		http.Error(w, "Server encountered a problem", 500)
-		return
-	}
+	jsonRes(w, data, nil)
 }
 
 func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +30,7 @@ func (app *application) moviesPost(w http.ResponseWriter, r *http.Request) {
 func (app *application) moviesIdParamGet(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		http.NotFound(w, r)
+		errRes(w, "id not found", nil, 404)
 		return
 	}
 

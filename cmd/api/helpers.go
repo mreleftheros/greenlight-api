@@ -9,10 +9,6 @@ type Err map[string]string
 
 func jsonRes(w http.ResponseWriter, data interface{}, header http.Header, status ...int) error {
 	sts := 200
-	json, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
 
 	if header != nil {
 		for k, v := range header {
@@ -26,7 +22,7 @@ func jsonRes(w http.ResponseWriter, data interface{}, header http.Header, status
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(sts)
-	if _, err = w.Write(json); err != nil {
+	if err := json.NewEncoder(w).Encode(data); err != nil {
 		return err
 	}
 
@@ -41,11 +37,6 @@ func errRes(w http.ResponseWriter, error interface{}, header http.Header, status
 		errStruct = Err{"error": error.(string)}
 	}
 
-	json, err := json.Marshal(errStruct)
-	if err != nil {
-		return err
-	}
-
 	if header != nil {
 		for k, v := range header {
 			w.Header()[k] = v
@@ -58,7 +49,7 @@ func errRes(w http.ResponseWriter, error interface{}, header http.Header, status
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(sts)
-	if _, err = w.Write(json); err != nil {
+	if err := json.NewEncoder(w).Encode(errStruct); err != nil {
 		return err
 	}
 

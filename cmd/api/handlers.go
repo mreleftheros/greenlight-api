@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/mreleftheros/greenlight-api/internal/models"
 )
@@ -20,32 +18,103 @@ func (app *application) healthGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
-	errRes(w, "oh no", nil)
+	errRes(w, nil, nil)
 }
 
 func (app *application) moviesPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Create new movie")
+	mb := &models.MovieBody{}
+	jsonBody(r, mb)
+
+	mv := &models.Movie{}
+	mv.Title = *mb.Title
+	mv.Year = *mb.Year
+	mv.Runtime = *mb.Runtime
+	mv.Genres = mb.Genres
+
+	if errors, ok := app.movieModel.Validate(mv); !ok {
+		errRes(w, errors, nil)
+		return
+	}
+
+	if err := app.movieModel.Set(mv); err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil, 500)
+		return
+	}
+
+	jsonRes(w, mv, nil, 201)
 }
 
 func (app *application) moviesIdParamGet(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		errRes(w, "id not found", nil, 404)
+	if err != nil || id <= 0 {
+		errRes(w, map[string]string{"error": "id not found"}, nil, 404)
 		return
 	}
 
-	movie := models.Movie{
-		Id:      id,
-		Created: time.Now(),
-		Title:   "Casablanca",
-		Year:    0,
-		Runtime: 122,
-		Genres:  []string{"Comedy", "Drama", "Crime"},
+	mv, err := app.movieModel.Get(id)
+	if err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil, 400)
+		return
 	}
 
-	jsonRes(w, movie, nil)
+	jsonRes(w, mv, nil)
 }
 
-func (app *application) moviesIdParamPut(w http.ResponseWriter, r *http.Request) {}
+func (app *application) moviesIdParamPut(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		errRes(w, map[string]string{"error": "id not found"}, nil)
+		return
+	}
 
-func (app *application) moviesIdParamDelete(w http.ResponseWriter, r *http.Request) {}
+	mb := &models.MovieBody{}
+	jsonBody(r, mb)
+
+	mv, err := app.movieModel.Get(id)
+	if err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
+
+	if mb.Title != nil {
+		mv.Title = *mb.Title
+	}
+	if mb.Year != nil {
+		mv.Year = *mb.Year
+	}
+	if mb.Runtime != nil {
+		mv.Runtime = *mb.Runtime
+	}
+	if mb.Genres != nil {
+		mv.Genres = mb.Genres
+	}
+
+	errors, ok := app.movieModel.Validate(mv)
+	if !ok {
+		errRes(w, errors, nil)
+		return
+	}
+
+	err = app.movieModel.Update(mv, id)
+	if err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
+
+	jsonRes(w, mv, nil)
+}
+
+func (app *application) moviesIdParamDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		errRes(w, map[string]string{"error": "id not found"}, nil)
+		return
+	}
+
+	if err = app.movieModel.Delete(id); err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
+
+	jsonRes(w, nil, nil, 204)
+}

@@ -5,8 +5,6 @@ import (
 	"net/http"
 )
 
-type Err map[string]string
-
 func jsonRes(w http.ResponseWriter, data interface{}, header http.Header, status ...int) error {
 	sts := 200
 
@@ -29,13 +27,8 @@ func jsonRes(w http.ResponseWriter, data interface{}, header http.Header, status
 	return nil
 }
 
-func errRes(w http.ResponseWriter, error interface{}, header http.Header, status ...int) error {
+func errRes(w http.ResponseWriter, errors map[string]string, header http.Header, status ...int) error {
 	sts := 400
-	var errStruct Err = nil
-
-	if error != nil {
-		errStruct = Err{"error": error.(string)}
-	}
 
 	if header != nil {
 		for k, v := range header {
@@ -49,9 +42,21 @@ func errRes(w http.ResponseWriter, error interface{}, header http.Header, status
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(sts)
-	if err := json.NewEncoder(w).Encode(errStruct); err != nil {
+	if err := json.NewEncoder(w).Encode(errors); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func jsonBody(r *http.Request, target_ptr interface{}) error {
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(target_ptr); err != nil {
+		return err
+	}
+	defer r.Body.Close()
 
 	return nil
 }

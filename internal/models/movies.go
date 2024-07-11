@@ -165,7 +165,7 @@ func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, error) {
 	movies := []*Movie{}
 
 	s := ""
-	c := strings.TrimPrefix(s, "-")
+	c := strings.TrimPrefix(mq.Sort, "-")
 	s += c
 	if strings.HasPrefix(mq.Sort, "-") {
 		s += " DESC"

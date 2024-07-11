@@ -18,18 +18,42 @@ func (app *application) healthGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
-	errRes(w, nil, nil)
+	values := r.URL.Query()
+	mq := &models.MovieQuery{}
+	if errors, ok := mq.Validate(&values); !ok {
+		errRes(w, errors, nil)
+		return
+	}
+
+	mvs, err := app.movieModel.GetAll(mq)
+	if err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
+	
+	jsonRes(w, mvs, nil)
 }
 
 func (app *application) moviesPost(w http.ResponseWriter, r *http.Request) {
-	mb := &models.MovieBody{}
-	jsonBody(r, mb)
+	mb := models.MovieBody{}
+	if err := jsonBody(r, &mb); err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
 
 	mv := &models.Movie{}
-	mv.Title = *mb.Title
-	mv.Year = *mb.Year
-	mv.Runtime = *mb.Runtime
-	mv.Genres = mb.Genres
+	if mb.Title != nil {
+		mv.Title = *mb.Title
+	}
+	if mb.Year != nil {
+		mv.Year = *mb.Year
+	}
+	if mb.Runtime != nil {
+		mv.Runtime = *mb.Runtime
+	}
+	if mb.Genres != nil {
+		mv.Genres = mb.Genres
+	}
 
 	if errors, ok := app.movieModel.Validate(mv); !ok {
 		errRes(w, errors, nil)
@@ -67,8 +91,11 @@ func (app *application) moviesIdParamPut(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	mb := &models.MovieBody{}
-	jsonBody(r, mb)
+	mb := models.MovieBody{}
+	if err := jsonBody(r, &mb); err != nil {
+		errRes(w, map[string]string{"error": err.Error()}, nil)
+		return
+	}
 
 	mv, err := app.movieModel.Get(id)
 	if err != nil {

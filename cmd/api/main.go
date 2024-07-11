@@ -42,7 +42,7 @@ func main() {
 		errLog.Fatalf("Unable to create connection pool: %v\n", err)
 	}
 	defer dbPool.Close()
-	infoLog.Print("Created connection pool successfully")
+	infoLog.Print("Created database pool")
 
 	if err = dbPool.Ping(context.Background()); err != nil {
 		errLog.Fatal(err)

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -100,7 +101,7 @@ func (mq *MovieQuery) Validate(values *url.Values) (map[string]string, bool) {
 			errors["sortError"] = "Sort value is not valid"
 		}
 	} else {
-		mq.Sort = "id"
+		mq.Sort = "-id"
 	}
 
 	if len(errors) > 0 {
@@ -162,7 +163,18 @@ func (m *MovieModel) Validate(mv *Movie) (map[string]string, bool) {
 
 func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, error) {
 	movies := []*Movie{}
-	stmt := "SELECT id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY id DESC;"
+
+	s := ""
+	c := strings.TrimPrefix(s, "-")
+	s += c
+	if strings.HasPrefix(mq.Sort, "-") {
+		s += " DESC"
+	}
+	if c != "id" {
+		s += ", id DESC"
+	}
+
+	stmt := fmt.Sprintf("SELECT id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s;", s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 	defer cancel()

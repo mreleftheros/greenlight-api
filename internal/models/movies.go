@@ -67,6 +67,8 @@ func (mq *MovieQuery) Validate(values *url.Values) (map[string]string, bool) {
 			errors["pageError"] = err.Error()
 		} else if p < 1 {
 			errors["pageError"] = "page must be greater than zero"
+		} else if p > 10000000 {
+			errors["pageError"] = "page must be less or equal than 10 million"
 		}
 		mq.Page = p
 	} else {
@@ -80,6 +82,8 @@ func (mq *MovieQuery) Validate(values *url.Values) (map[string]string, bool) {
 			errors["pageSizeError"] = err.Error()
 		} else if ps < 1 {
 			errors["pageSizeError"] = "page_size must be greater than zero"
+		} else if ps > 100 {
+			errors["pageSizeError"] = "page_size must be less or equal than 100"
 		}
 		mq.PageSize = ps
 	} else {
@@ -174,12 +178,12 @@ func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, error) {
 		s += ", id DESC"
 	}
 
-	stmt := fmt.Sprintf("SELECT id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s;", s)
+	stmt := fmt.Sprintf("SELECT id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s LIMIT $3 OFFSET $4;", s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 	defer cancel()
 
-	rows, err := m.Db.Query(ctx, stmt, mq.Title, mq.Genres)
+	rows, err := m.Db.Query(ctx, stmt, mq.Title, mq.Genres, mq.PageSize, (mq.Page - 1) * mq.PageSize)
 	if err != nil {
 		return nil, err
 	}

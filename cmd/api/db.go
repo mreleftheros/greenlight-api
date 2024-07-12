@@ -12,7 +12,6 @@ func (app *application) initDb() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	app.infogLog.Print("Database connected")
 

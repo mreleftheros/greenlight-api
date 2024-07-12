@@ -7,16 +7,6 @@ import (
 	"github.com/mreleftheros/greenlight-api/internal/models"
 )
 
-func (app *application) healthGet(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"status":      "available",
-		"environment": app.cfg.env,
-		"version":     VERSION,
-	}
-
-	jsonRes(w, data, nil)
-}
-
 func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	mq := &models.MovieQuery{}

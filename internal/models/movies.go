@@ -21,30 +21,30 @@ type Movie struct {
 	Runtime int       `json:"runtime"`
 	Genres  []string  `json:"genres"`
 	Created time.Time `json:"created"`
-	Version int `json:"-"`
+	Version int       `json:"-"`
 }
 
 type MovieBody struct {
-	Title   *string   `json:"title"`
-	Year    *int      `json:"year"`
-	Runtime *int      `json:"runtime"`
+	Title   *string  `json:"title"`
+	Year    *int     `json:"year"`
+	Runtime *int     `json:"runtime"`
 	Genres  []string `json:"genres"`
 }
 
 type MovieQuery struct {
-	Title string
-	Genres []string
-	Page int
+	Title    string
+	Genres   []string
+	Page     int
 	PageSize int
-	Sort string
+	Sort     string
 }
 
 type Metadata struct {
-	Page int`json:"current_page"`
-	PageSize int`json:"page_size"`
-	FirstPage int`json:"first_page"`
-	LastPage int`json:"last_page"`
-	Total int`json:"total_records"`
+	Page      int `json:"current_page"`
+	PageSize  int `json:"page_size"`
+	FirstPage int `json:"first_page"`
+	LastPage  int `json:"last_page"`
+	Total     int `json:"total_records"`
 }
 
 type MovieModel struct {
@@ -57,11 +57,11 @@ func (mq *MovieQuery) Metadata(total int) *Metadata {
 	}
 
 	return &Metadata{
-		Page: mq.Page,
-		PageSize: mq.PageSize,
+		Page:      mq.Page,
+		PageSize:  mq.PageSize,
 		FirstPage: 1,
-		LastPage: int(math.Ceil(float64(total) / float64(mq.PageSize))),
-		Total: total,
+		LastPage:  int(math.Ceil(float64(total) / float64(mq.PageSize))),
+		Total:     total,
 	}
 }
 
@@ -204,10 +204,10 @@ func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, *Metadata, error) {
 
 	stmt := fmt.Sprintf("SELECT COUNT(*) OVER(), id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s LIMIT $3 OFFSET $4;", s)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.Db.Query(ctx, stmt, mq.Title, mq.Genres, mq.PageSize, (mq.Page - 1) * mq.PageSize)
+	rows, err := m.Db.Query(ctx, stmt, mq.Title, mq.Genres, mq.PageSize, (mq.Page-1)*mq.PageSize)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -235,7 +235,7 @@ func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, *Metadata, error) {
 func (m *MovieModel) Set(mv *Movie) error {
 	stmt := "INSERT INTO movies (title, year, runtime, genres) VALUES($1, $2, $3, $4) RETURNING id, created;"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	if err := m.Db.QueryRow(ctx, stmt, mv.Title, mv.Year, mv.Runtime, mv.Genres).Scan(&mv.Id, &mv.Created); err != nil {
@@ -248,21 +248,21 @@ func (m *MovieModel) Set(mv *Movie) error {
 func (m *MovieModel) Get(id int) (*Movie, error) {
 	stmt := "SELECT id, title, year, runtime, genres, created, version FROM movies WHERE id = $1;"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	
+
 	mv := &Movie{}
 	if err := m.Db.QueryRow(ctx, stmt, id).Scan(&mv.Id, &mv.Title, &mv.Year, &mv.Runtime, &mv.Genres, &mv.Created, &mv.Version); err != nil {
 		return nil, err
 	}
-	
+
 	return mv, nil
 }
 
 func (m *MovieModel) Update(mv *Movie, id int) error {
 	stmt := "UPDATE movies SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1 WHERE id = $5 AND version = $6 RETURNING version;"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err := m.Db.QueryRow(ctx, stmt, mv.Title, mv.Year, mv.Runtime, mv.Genres, id, mv.Version).Scan(&mv.Version)
@@ -276,7 +276,7 @@ func (m *MovieModel) Update(mv *Movie, id int) error {
 func (m *MovieModel) Delete(id int) error {
 	stmt := "DELETE FROM movies WHERE id = $1;"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	result, err := m.Db.Exec(ctx, stmt, id)

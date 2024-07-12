@@ -16,7 +16,11 @@ type application struct {
 	movieModel *models.MovieModel
 }
 
-func (app *application) NewLoggers() {
+func (app *application) initLoggers() {
 	app.infogLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.errLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
+func (app *application) initModels() {
+	app.movieModel = &models.MovieModel{Db: app.db}
 }

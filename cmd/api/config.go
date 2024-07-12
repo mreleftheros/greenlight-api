@@ -8,7 +8,7 @@ type config struct {
 	db   string
 }
 
-func (app *application) NewConfig() {
+func (app *application) newConfig() {
 	cfg := config{}
 	flag.StringVar(&cfg.addr, "addr", "localhost:3000", "API server address")
 	flag.StringVar(&cfg.env, "env", "DEVELOPMENT", "Environment (DEVELOPMENT|STAGING|PRODUCTION)")

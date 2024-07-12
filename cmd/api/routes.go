@@ -5,7 +5,15 @@ import "net/http"
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /v1/health", app.healthGet)
+	mux.HandleFunc("GET /v1/health", func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]string{
+			"status":      "available",
+			"environment": app.cfg.env,
+			"version":     VERSION,
+		}
+	
+		jsonRes(w, data, nil)
+	})
 
 	mux.HandleFunc("GET /v1/movies", app.moviesGet)
 	mux.HandleFunc("POST /v1/movies", app.moviesPost)

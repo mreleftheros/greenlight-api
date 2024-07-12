@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -38,8 +39,30 @@ type MovieQuery struct {
 	Sort string
 }
 
+type Metadata struct {
+	Page int`json:"current_page"`
+	PageSize int`json:"page_size"`
+	FirstPage int`json:"first_page"`
+	LastPage int`json:"last_page"`
+	Total int`json:"total_records"`
+}
+
 type MovieModel struct {
 	Db *pgxpool.Pool
+}
+
+func (mq *MovieQuery) Metadata(total int) *Metadata {
+	if total == 0 {
+		return &Metadata{}
+	}
+
+	return &Metadata{
+		Page: mq.Page,
+		PageSize: mq.PageSize,
+		FirstPage: 1,
+		LastPage: int(math.Ceil(float64(total) / float64(mq.PageSize))),
+		Total: total,
+	}
 }
 
 func (mq *MovieQuery) Validate(values *url.Values) (map[string]string, bool) {
@@ -165,7 +188,8 @@ func (m *MovieModel) Validate(mv *Movie) (map[string]string, bool) {
 	return errors, true
 }
 
-func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, error) {
+func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, *Metadata, error) {
+	total := 0
 	movies := []*Movie{}
 
 	s := ""
@@ -178,32 +202,34 @@ func (m *MovieModel) GetAll(mq *MovieQuery) ([]*Movie, error) {
 		s += ", id DESC"
 	}
 
-	stmt := fmt.Sprintf("SELECT id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s LIMIT $3 OFFSET $4;", s)
+	stmt := fmt.Sprintf("SELECT COUNT(*) OVER(), id, title, year, runtime, genres, created FROM movies WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') AND (genres @> $2 OR $2 = '{}') ORDER BY %s LIMIT $3 OFFSET $4;", s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 	defer cancel()
 
 	rows, err := m.Db.Query(ctx, stmt, mq.Title, mq.Genres, mq.PageSize, (mq.Page - 1) * mq.PageSize)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		m := Movie{}
 
-		if err := rows.Scan(&m.Id, &m.Title, &m.Year, &m.Runtime, &m.Genres, &m.Created); err != nil {
-			return nil, err
+		if err := rows.Scan(&total, &m.Id, &m.Title, &m.Year, &m.Runtime, &m.Genres, &m.Created); err != nil {
+			return nil, nil, err
 		}
 
 		movies = append(movies, &m)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return movies, nil
+	metadata := mq.Metadata(total)
+
+	return movies, metadata, nil
 }
 
 func (m *MovieModel) Set(mv *Movie) error {

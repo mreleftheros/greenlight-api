@@ -13,5 +13,5 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("PUT /v1/movies/{id}", app.moviesIdParamPut)
 	mux.HandleFunc("DELETE /v1/movies/{id}", app.moviesIdParamDelete)
 
-	return mux
+	return app.recoverPanic(mux)
 }

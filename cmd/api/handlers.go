@@ -25,13 +25,13 @@ func (app *application) moviesGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mvs, err := app.movieModel.GetAll(mq)
+	movies, metadata, err := app.movieModel.GetAll(mq)
 	if err != nil {
 		errRes(w, map[string]string{"error": err.Error()}, nil)
 		return
 	}
 	
-	jsonRes(w, mvs, nil)
+	jsonRes(w, struct{Movies []*models.Movie`json:"movies"`;Metadata *models.Metadata`json:"metadata"`;}{Movies: movies, Metadata: metadata}, nil)
 }
 
 func (app *application) moviesPost(w http.ResponseWriter, r *http.Request) {

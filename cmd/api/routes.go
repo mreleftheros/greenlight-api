@@ -11,9 +11,14 @@ func (app *application) routes() http.Handler {
 			"environment": app.cfg.env,
 			"version":     VERSION,
 		}
-	
+
 		jsonRes(w, data, nil)
 	})
+
+	mux.HandleFunc("POST /v1/users/signup", app.usersSignupPost)
+	mux.HandleFunc("POST /v1/users/login", app.usersLoginPost)
+	mux.HandleFunc("POST /v1/users/logout", app.usersLogoutPost)
+	mux.HandleFunc("GET /v1/users/me", app.usersMeGet)
 
 	mux.HandleFunc("GET /v1/movies", app.moviesGet)
 	mux.HandleFunc("POST /v1/movies", app.moviesPost)
